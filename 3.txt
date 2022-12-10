@@ -1,0 +1,36 @@
+good datastore for this scenario would be a time-series database.  This type of database is optimized for storing and querying large amounts of data that are time-stamped, making it well-suited for monitoring data.
+
+The datastore would store the following data for each API request:
+
+API name
+Timestamp
+User ID
+Request duration (in milliseconds)
+Whether the request was successful or not
+With this data, the datastore could support the following queries:
+
+Get the API with maximum average response time across the users:
+
+SELECT api_name, AVG(request_duration) as avg_response_time
+FROM requests
+GROUP BY api_name
+ORDER BY avg_response_time DESC
+LIMIT 1;
+
+Get the API with maximum average response time for each user:
+
+SELECT user_id, api_name, AVG(request_duration) as avg_response_time
+FROM requests
+GROUP BY user_id, api_name
+ORDER BY avg_response_time DESC;
+
+Get error percentage of each API in buckets of 1 hours for 24 hours:
+
+SELECT api_name, DATE_TRUNC('hour', timestamp) as hour,
+       SUM(CASE WHEN successful = TRUE THEN 1 ELSE 0 END) as num_successes,
+       COUNT(*) as num_requests,
+       100 * SUM(CASE WHEN successful = TRUE THEN 1 ELSE 0 END) / COUNT(*) as success_percentage
+FROM requests
+WHERE timestamp >= CURRENT_TIMESTAMP - INTERVAL '24 hours'
+GROUP BY api_name, hour
+ORDER BY hour ASC;
